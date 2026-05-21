@@ -1,15 +1,9 @@
-const SibApiV3Sdk = require('sib-api-v3-sdk');
-
-let defaultClient = SibApiV3Sdk.ApiClient.instance;
-let apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
-
-let apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+const https = require('https');
 
 const sendVerificationEmail = async (to, firstName, token) => {
   const verifyUrl = `${process.env.CLIENT_URL}/account/verify-email?token=${token}`;
   
-  let sendSmtpEmail = {
+  const data = JSON.stringify({
     sender: { name: "Auth", email: process.env.EMAIL_FROM },
     to: [{ email: to }],
     subject: "Verify Your Email - Auth",
@@ -24,16 +18,42 @@ const sendVerificationEmail = async (to, firstName, token) => {
         </body>
       </html>
     `
+  });
+
+  const options = {
+    hostname: 'api.brevo.com',
+    path: '/v3/smtp/email',
+    method: 'POST',
+    headers: {
+      'api-key': process.env.BREVO_API_KEY,
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(data)
+    }
   };
-  
-  try {
-    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Email sent to ${to}`);
-    return data;
-  } catch (error) {
-    console.error('❌ Brevo error:', error.response?.body || error.message);
-    throw error;
-  }
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      res.on('data', (chunk) => { responseData += chunk; });
+      res.on('end', () => {
+        if (res.statusCode === 201) {
+          console.log('✅ Email sent successfully to:', to);
+          resolve(JSON.parse(responseData));
+        } else {
+          console.error('❌ Brevo error:', responseData);
+          reject(new Error(`Brevo API error: ${res.statusCode}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      console.error('❌ Request error:', error);
+      reject(error);
+    });
+
+    req.write(data);
+    req.end();
+  });
 };
 
 module.exports = { sendVerificationEmail };
