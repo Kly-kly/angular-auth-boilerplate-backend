@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { sendVerificationEmail } = require('../utils/brevo');
 
 // Temporary storage (replace with database later)
 let users = [];
@@ -44,13 +45,19 @@ router.post('/register', async (req, res) => {
     
     users.push(newUser);
     
-    const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:4200'}/account/verify-email?token=${verificationToken}`;
+    // Send verification email
+    try {
+      await sendVerificationEmail(email, firstName, verificationToken);
+      console.log(`Verification email sent to ${email}`);
+    } catch (emailError) {
+      console.error('Failed to send email:', emailError);
+    }
     
     res.status(201).json({ 
-      message: 'Registration successful!', 
-      verifyUrl
+      message: 'Registration successful! Please check your email for verification.'
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
