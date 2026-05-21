@@ -1,15 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
-const accountController = require('../controllers/accountController');
-const { authenticate, authorize } = require('../middleware/auth');
 
-// Public routes
-router.post('/register', authController.register);
-router.post('/verify-email', authController.verifyEmail);
+// Test route
+router.get('/test', (req, res) => {
+  res.json({ message: 'Backend is working!', timestamp: new Date() });
+});
 
-// Protected routes (Admin only)
-router.get('/', authenticate, authorize('Admin'), accountController.getAccounts);
-router.get('/:id', authenticate, accountController.getAccountById);
+// Health check
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'klykly-auth-backend' });
+});
+
+router.post('/register', (req, res) => {
+  res.json({ message: 'Register endpoint - to be implemented' });
+});
 
 module.exports = router;
