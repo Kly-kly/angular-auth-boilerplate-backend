@@ -1,59 +1,49 @@
-const https = require('https');
+const SibApiV3Sdk = require('sib-api-v3-sdk');
+
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 const sendVerificationEmail = async (to, firstName, token) => {
-  const verifyUrl = `${process.env.CLIENT_URL}/account/verify-email?token=${token}`;
+  const verifyUrl = `${process.env.FRONTEND_URL}/account/verify-email?token=${token}`;
   
-  const data = JSON.stringify({
+  const sendSmtpEmail = {
     sender: { name: "Auth", email: process.env.EMAIL_FROM },
     to: [{ email: to }],
     subject: "Verify Your Email - Auth",
     htmlContent: `
       <html>
-        <body>
-          <h2>Verify Your Email</h2>
-          <p>Hi ${firstName},</p>
-          <p>Click the link below to verify your email:</p>
-          <a href="${verifyUrl}">Verify Email Address</a>
-          <p>This link expires in 24 hours.</p>
+        <body style="font-family: Arial, sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            <h2 style="color: #4F46E5; text-align: center;">Verify Your Email</h2>
+            <p>Hi ${firstName},</p>
+            <p>Thank you for registering with Auth. Please verify your email address to complete your registration.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verifyUrl}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                Verify Email Address
+              </a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; font-size: 12px; color: #666;">${verifyUrl}</p>
+            <p>This link will expire in 24 hours.</p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">If you didn't create an account, please ignore this email.</p>
+          </div>
         </body>
       </html>
     `
-  });
-
-  const options = {
-    hostname: 'api.brevo.com',
-    path: '/v3/smtp/email',
-    method: 'POST',
-    headers: {
-      'api-key': process.env.BREVO_API_KEY,
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(data)
-    }
   };
-
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      let responseData = '';
-      res.on('data', (chunk) => { responseData += chunk; });
-      res.on('end', () => {
-        if (res.statusCode === 201) {
-          console.log('✅ Email sent successfully to:', to);
-          resolve(JSON.parse(responseData));
-        } else {
-          console.error('❌ Brevo error:', responseData);
-          reject(new Error(`Brevo API error: ${res.statusCode}`));
-        }
-      });
-    });
-
-    req.on('error', (error) => {
-      console.error('❌ Request error:', error);
-      reject(error);
-    });
-
-    req.write(data);
-    req.end();
-  });
+  
+  try {
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Verification email sent to ${to} from ${process.env.EMAIL_FROM}`);
+    return data;
+  } catch (error) {
+    console.error('❌ Brevo error:', error.response?.body || error.message);
+    throw error;
+  }
 };
 
 module.exports = { sendVerificationEmail };
