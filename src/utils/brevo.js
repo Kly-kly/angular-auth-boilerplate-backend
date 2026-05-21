@@ -10,9 +10,9 @@ const sendVerificationEmail = async (to, firstName, token) => {
   const verifyUrl = `${process.env.CLIENT_URL}/account/verify-email?token=${token}`;
   
   let sendSmtpEmail = {
-    sender: { name: "AuthMaster", email: process.env.EMAIL_FROM },
+    sender: { name: "Auth", email: process.env.EMAIL_FROM },
     to: [{ email: to }],
-    subject: "Verify Your Email - AuthMaster",
+    subject: "Verify Your Email - Auth",
     htmlContent: `
       <html>
         <body>
@@ -28,10 +28,10 @@ const sendVerificationEmail = async (to, firstName, token) => {
   
   try {
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log(`Email sent to ${to}`);
+    console.log(`✅ Email sent to ${to}`);
     return data;
   } catch (error) {
-    console.error('Brevo error:', error);
+    console.error('❌ Brevo error:', error.response?.body || error.message);
     throw error;
   }
 };
