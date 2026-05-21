@@ -21,6 +21,6 @@ router.post('/reset-password', authController.resetPassword);
 router.get('/', authController.getAll);
 router.get('/:id', authController.getById);
 router.put('/:id', authController.update);
-router.delete('/:id', authController.delete);
+router.delete('/:id', authController.deleteUser);  // ← Changed from 'delete' to 'deleteUser'
 
 module.exports = router;
