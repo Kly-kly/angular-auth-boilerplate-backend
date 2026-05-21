@@ -46,4 +46,45 @@ const sendVerificationEmail = async (to, firstName, token) => {
   }
 };
 
-module.exports = { sendVerificationEmail };
+// ✅ ADD THIS NEW FUNCTION
+const sendResetEmail = async (to, firstName, token) => {
+  const resetUrl = `${process.env.FRONTEND_URL}/account/reset-password?token=${token}`;
+  
+  const sendSmtpEmail = {
+    sender: { name: "Auth", email: process.env.EMAIL_FROM },
+    to: [{ email: to }],
+    subject: "Reset Your Password - Auth",
+    htmlContent: `
+      <html>
+        <body style="font-family: Arial, sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            <h2 style="color: #4F46E5; text-align: center;">Reset Your Password</h2>
+            <p>Hi ${firstName},</p>
+            <p>We received a request to reset your password. Click the button below to create a new password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                Reset Password
+              </a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; font-size: 12px; color: #666;">${resetUrl}</p>
+            <p>This link will expire in 1 hour.</p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">If you didn't request a password reset, please ignore this email.</p>
+          </div>
+        </body>
+      </html>
+    `
+  };
+  
+  try {
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Reset email sent to ${to}`);
+    return data;
+  } catch (error) {
+    console.error('❌ Brevo error sending reset email:', error.response?.body || error.message);
+    throw error;
+  }
+};
+
+module.exports = { sendVerificationEmail, sendResetEmail };

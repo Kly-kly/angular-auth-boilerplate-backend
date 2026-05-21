@@ -1,206 +1,94 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const { sendVerificationEmail } = require('../utils/brevo');
+const { sendVerificationEmail, sendResetEmail } = require('../utils/brevo'); // ✅ ADD sendResetEmail
 
-// Temporary storage (replace with database later)
-let users = [];
+// ... (rest of your code stays the same)
 
-const register = async (req, res) => {
+// ✅ REPLACE the forgotPassword function with this:
+const forgotPassword = async (req, res) => {
   try {
-    const { title, firstName, lastName, email, password, acceptTerms } = req.body;
+    const { email } = req.body;
+    console.log('📧 Forgot password request for:', email);
     
-    console.log('📝 Register attempt:', email);
+    // Find user by email
+    const user = users.find(u => u.email === email);
     
-    if (!acceptTerms) {
-      return res.status(400).json({ message: 'You must accept terms' });
+    if (!user) {
+      // For security, still return success even if email not found
+      console.log('❌ Email not found:', email);
+      return res.status(200).json({ message: 'If an account exists with this email, you will receive password reset instructions.' });
     }
     
-    const existingUser = users.find(u => u.email === email);
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
-    }
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
     
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const role = users.length === 0 ? 'Admin' : 'User';
+    console.log('✅ Reset token generated for:', email);
     
-    const newUser = {
-      id: users.length + 1,
-      title,
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      role,
-      isVerified: false,
-      verificationToken
-    };
-    
-    users.push(newUser);
-    console.log('✅ User created:', email);
-    
-    // Send verification email
+    // Send reset email via Brevo
     try {
-      await sendVerificationEmail(email, firstName, verificationToken);
-      console.log('✅ Email sent to:', email);
+      await sendResetEmail(email, user.firstName, resetToken);
+      console.log('✅ Reset email sent to:', email);
     } catch (emailError) {
       console.error('❌ Email error:', emailError.message);
     }
     
-    res.status(201).json({ 
-      message: 'Registration successful! Please check your email for verification.'
-    });
+    res.status(200).json({ message: 'If an account exists with this email, you will receive password reset instructions.' });
+    
   } catch (error) {
-    console.error('❌ Server error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Forgot password error:', error);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 };
 
-const verifyEmail = (req, res) => {
-  const { token } = req.body;
-  const user = users.find(u => u.verificationToken === token);
-  
-  if (!user) {
-    return res.status(400).json({ message: 'Invalid token' });
-  }
-  
-  user.isVerified = true;
-  delete user.verificationToken;
-  console.log('✅ Email verified:', user.email);
-  
-  res.json({ message: 'Email verified successfully' });
-};
-
-const login = async (req, res) => {
-  const { email, password } = req.body;
-  const user = users.find(u => u.email === email);
-  
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
-  
-  if (!user.isVerified) {
-    return res.status(401).json({ message: 'Please verify your email first' });
-  }
-  
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || 'secret',
-    { expiresIn: '15m' }
-  );
-  
-  res.json({
-    id: user.id,
-    title: user.title,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    role: user.role,
-    jwtToken: token
-  });
-};
-
-// ========== NEW FUNCTIONS ==========
-
-const refreshToken = (req, res) => {
-  console.log('🔄 Refresh token called');
-  // For now, just return success
-  res.status(200).json({ message: 'Token refresh endpoint' });
-};
-
-const revokeToken = (req, res) => {
-  console.log('🔒 Revoke token called');
-  res.status(200).json({ message: 'Token revoked successfully' });
-};
-
-const forgotPassword = (req, res) => {
-  const { email } = req.body;
-  console.log('📧 Forgot password for:', email);
-  res.status(200).json({ message: 'If email exists, password reset link sent' });
-};
-
+// ✅ REPLACE the validateResetToken function with this:
 const validateResetToken = (req, res) => {
   const { token } = req.body;
-  console.log('✅ Validate reset token called');
+  console.log('🔍 Validating reset token');
+  
+  const user = users.find(u => u.resetToken === token && u.resetTokenExpiry > Date.now());
+  
+  if (!user) {
+    return res.status(400).json({ message: 'Invalid or expired token' });
+  }
+  
   res.status(200).json({ message: 'Token is valid' });
 };
 
-const resetPassword = (req, res) => {
-  const { token, password, confirmPassword } = req.body;
-  console.log('🔑 Reset password called');
-  res.status(200).json({ message: 'Password reset successfully' });
-};
-
-const getAll = (req, res) => {
-  console.log('📋 Get all users');
-  const usersWithoutPassword = users.map(({ password, ...user }) => user);
-  res.json(usersWithoutPassword);
-};
-
-const getById = (req, res) => {
-  const { id } = req.params;
-  console.log('🔍 Get user by id:', id);
-  const user = users.find(u => u.id == id);
-  
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
-  }
-  
-  const { password, ...userWithoutPassword } = user;
-  res.json(userWithoutPassword);
-};
-
-const update = async (req, res) => {
+// ✅ REPLACE the resetPassword function with this:
+const resetPassword = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, firstName, lastName, email, password } = req.body;
+    const { token, password, confirmPassword } = req.body;
     
-    console.log('✏️ Update user:', id);
-    
-    const userIndex = users.findIndex(u => u.id == id);
-    
-    if (userIndex === -1) {
-      return res.status(404).json({ message: 'User not found' });
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' });
     }
     
-    // Update user fields
-    if (title) users[userIndex].title = title;
-    if (firstName) users[userIndex].firstName = firstName;
-    if (lastName) users[userIndex].lastName = lastName;
-    if (email) users[userIndex].email = email;
+    const user = users.find(u => u.resetToken === token && u.resetTokenExpiry > Date.now());
     
-    // Update password if provided
-    if (password) {
-      users[userIndex].password = await bcrypt.hash(password, 10);
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
     }
     
-    // Return updated user without password
-    const { password: _, ...userWithoutPassword } = users[userIndex];
+    // Update password
+    user.password = await bcrypt.hash(password, 10);
     
-    console.log('✅ User updated:', userWithoutPassword.email);
-    res.json(userWithoutPassword);
+    // Clear reset token
+    delete user.resetToken;
+    delete user.resetTokenExpiry;
+    
+    console.log('✅ Password reset for:', user.email);
+    res.status(200).json({ message: 'Password reset successfully' });
     
   } catch (error) {
-    console.error('❌ Update error:', error);
+    console.error('❌ Reset password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-const deleteUser = (req, res) => {
-  const { id } = req.params;
-  console.log('🗑️ Delete user:', id);
-  
-  const userIndex = users.findIndex(u => u.id == id);
-  
-  if (userIndex === -1) {
-    return res.status(404).json({ message: 'User not found' });
-  }
-  
-  users.splice(userIndex, 1);
-  res.json({ message: 'User deleted successfully' });
-};
-
+// ✅ Make sure all functions are exported
 module.exports = { 
   register, 
   verifyEmail, 
