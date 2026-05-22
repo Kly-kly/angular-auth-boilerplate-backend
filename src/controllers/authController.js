@@ -215,8 +215,21 @@ const resetPassword = async (req, res) => {
 const getAll = async (req, res) => {
   console.log('📋 Get all users');
   try {
-    const [users] = await promisePool.query('SELECT id, title, firstName, lastName, email, role, isVerified, createdAt FROM users');
-    res.json(users);
+    const [users] = await promisePool.query(`
+      SELECT 
+        id, 
+        title, 
+        firstName, 
+        lastName, 
+        email, 
+        role, 
+        isVerified, 
+        createdAt 
+      FROM users
+    `);
+    console.log('✅ Found users:', users.length);
+    // Return array even if empty
+    res.json(users || []);
   } catch (error) {
     console.error('❌ Get all error:', error);
     res.status(500).json({ message: 'Server error' });

@@ -13,12 +13,12 @@ router.post('/validate-reset-token', authController.validateResetToken);
 router.post('/reset-password', authController.resetPassword);
 
 // User management routes
-router.get('/', authController.getAll);  // ← This now returns all users
+router.get('/', authController.getAll);
 router.get('/:id', authController.getById);
 router.put('/:id', authController.update);
 router.delete('/:id', authController.deleteUser);
 
-// Health check - moved to a different path
+// Health check
 router.get('/health', (req, res) => {
   res.json({ message: 'API is working!' });
 });
