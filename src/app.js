@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const accountRoutes = require('./routes/accountRoutes');
+const setupSwagger = require('./config/swagger');
 require('dotenv').config();
 
 const app = express();
@@ -35,8 +36,27 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Routes
 app.use('/accounts', accountRoutes);
 
+// Swagger documentation
+setupSwagger(app);
+
+// Root route with API info
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Angular Auth API',
+    documentation: '/api-docs',
+    endpoints: {
+      health: '/accounts/health',
+      register: '/accounts/register',
+      login: '/accounts/authenticate',
+      docs: '/api-docs'
+    }
+  });
+});
+
+// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
