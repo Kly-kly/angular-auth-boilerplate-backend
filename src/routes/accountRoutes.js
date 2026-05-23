@@ -20,8 +20,9 @@ router.get('/health', (req, res) => {
  * @openapi
  * /accounts/register:
  *   post:
- *     summary: Register a new user
- *     tags: [Authentication]
+ *     summary: Register a new user account
+ *     description: Creates a new user account and sends a verification email
+ *     tags: [Accounts]
  *     requestBody:
  *       required: true
  *       content:
@@ -38,21 +39,27 @@ router.get('/health', (req, res) => {
  *             properties:
  *               title:
  *                 type: string
+ *                 example: Mr
  *               firstName:
  *                 type: string
+ *                 example: John
  *               lastName:
  *                 type: string
+ *                 example: Doe
  *               email:
  *                 type: string
+ *                 example: user@example.com
  *               password:
  *                 type: string
+ *                 example: password123
  *               acceptTerms:
  *                 type: boolean
+ *                 example: true
  *     responses:
  *       201:
- *         description: Registration successful
+ *         description: Registration successful - verification email sent
  *       400:
- *         description: Email already registered or terms not accepted
+ *         description: Email already registered or invalid data
  */
 router.post('/register', authController.register);
 
@@ -60,8 +67,9 @@ router.post('/register', authController.register);
  * @openapi
  * /accounts/verify-email:
  *   post:
- *     summary: Verify user email with token
- *     tags: [Authentication]
+ *     summary: Verify a new account
+ *     description: Verify a new account with a verification token received by email after registration
+ *     tags: [Accounts]
  *     requestBody:
  *       required: true
  *       content:
@@ -77,7 +85,7 @@ router.post('/register', authController.register);
  *       200:
  *         description: Email verified successfully
  *       400:
- *         description: Invalid token
+ *         description: Invalid or expired verification token
  */
 router.post('/verify-email', authController.verifyEmail);
 
@@ -85,8 +93,9 @@ router.post('/verify-email', authController.verifyEmail);
  * @openapi
  * /accounts/authenticate:
  *   post:
- *     summary: Login user
- *     tags: [Authentication]
+ *     summary: Authenticate account
+ *     description: Authenticate account credentials and return a JWT token
+ *     tags: [Accounts]
  *     requestBody:
  *       required: true
  *       content:
@@ -99,8 +108,10 @@ router.post('/verify-email', authController.verifyEmail);
  *             properties:
  *               email:
  *                 type: string
+ *                 example: user@example.com
  *               password:
  *                 type: string
+ *                 example: password123
  *     responses:
  *       200:
  *         description: Login successful
@@ -114,10 +125,11 @@ router.post('/authenticate', authController.login);
  * /accounts/refresh-token:
  *   post:
  *     summary: Refresh JWT token
- *     tags: [Authentication]
+ *     description: Get a new JWT token using refresh token
+ *     tags: [Accounts]
  *     responses:
  *       200:
- *         description: Token refreshed successfully
+ *         description: New token generated
  *       401:
  *         description: Invalid refresh token
  */
@@ -127,11 +139,12 @@ router.post('/refresh-token', authController.refreshToken);
  * @openapi
  * /accounts/revoke-token:
  *   post:
- *     summary: Revoke refresh token (logout)
- *     tags: [Authentication]
+ *     summary: Revoke refresh token
+ *     description: Logout and revoke refresh token
+ *     tags: [Accounts]
  *     responses:
  *       200:
- *         description: Token revoked successfully
+ *         description: Logged out successfully
  */
 router.post('/revoke-token', authController.revokeToken);
 
@@ -139,8 +152,9 @@ router.post('/revoke-token', authController.revokeToken);
  * @openapi
  * /accounts/forgot-password:
  *   post:
- *     summary: Request password reset email
- *     tags: [Password Reset]
+ *     summary: Forgot password
+ *     description: Submit email address to reset the password on an account
+ *     tags: [Accounts]
  *     requestBody:
  *       required: true
  *       content:
@@ -152,9 +166,10 @@ router.post('/revoke-token', authController.revokeToken);
  *             properties:
  *               email:
  *                 type: string
+ *                 example: user@example.com
  *     responses:
  *       200:
- *         description: Reset email sent if account exists
+ *         description: Reset instructions sent if email exists
  */
 router.post('/forgot-password', authController.forgotPassword);
 
@@ -162,8 +177,9 @@ router.post('/forgot-password', authController.forgotPassword);
  * @openapi
  * /accounts/validate-reset-token:
  *   post:
- *     summary: Validate password reset token
- *     tags: [Password Reset]
+ *     summary: Validate reset token
+ *     description: Validate the reset password token received by email
+ *     tags: [Accounts]
  *     requestBody:
  *       required: true
  *       content:
@@ -187,8 +203,9 @@ router.post('/validate-reset-token', authController.validateResetToken);
  * @openapi
  * /accounts/reset-password:
  *   post:
- *     summary: Reset password with token
- *     tags: [Password Reset]
+ *     summary: Reset password
+ *     description: Reset the password for an account using a valid token
+ *     tags: [Accounts]
  *     requestBody:
  *       required: true
  *       content:
@@ -204,13 +221,15 @@ router.post('/validate-reset-token', authController.validateResetToken);
  *                 type: string
  *               password:
  *                 type: string
+ *                 example: newpassword123
  *               confirmPassword:
  *                 type: string
+ *                 example: newpassword123
  *     responses:
  *       200:
- *         description: Password reset successfully
+ *         description: Password reset successful
  *       400:
- *         description: Invalid token or passwords don't match
+ *         description: Invalid or expired token or passwords don't match
  */
 router.post('/reset-password', authController.resetPassword);
 
@@ -218,13 +237,14 @@ router.post('/reset-password', authController.resetPassword);
  * @openapi
  * /accounts:
  *   get:
- *     summary: Get all users (Admin only)
+ *     summary: Get all accounts
+ *     description: Get all user accounts (Admin only)
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of all users
+ *         description: List of all accounts
  *       401:
  *         description: Unauthorized
  */
@@ -234,8 +254,9 @@ router.get('/', authController.getAll);
  * @openapi
  * /accounts/{id}:
  *   get:
- *     summary: Get user by ID
- *     tags: [Users]
+ *     summary: Get account by ID
+ *     description: Get a specific user account by ID
+ *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -243,12 +264,12 @@ router.get('/', authController.getAll);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *     responses:
  *       200:
- *         description: User details
+ *         description: Account found
  *       404:
- *         description: User not found
+ *         description: Account not found
  */
 router.get('/:id', authController.getById);
 
@@ -256,8 +277,9 @@ router.get('/:id', authController.getById);
  * @openapi
  * /accounts/{id}:
  *   put:
- *     summary: Update user
- *     tags: [Users]
+ *     summary: Update account
+ *     description: Update a user account
+ *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -265,8 +287,9 @@ router.get('/:id', authController.getById);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
@@ -284,9 +307,9 @@ router.get('/:id', authController.getById);
  *                 type: string
  *     responses:
  *       200:
- *         description: User updated
+ *         description: Account updated
  *       404:
- *         description: User not found
+ *         description: Account not found
  */
 router.put('/:id', authController.update);
 
@@ -294,8 +317,9 @@ router.put('/:id', authController.update);
  * @openapi
  * /accounts/{id}:
  *   delete:
- *     summary: Delete user
- *     tags: [Users]
+ *     summary: Delete account
+ *     description: Delete a user account
+ *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -303,12 +327,12 @@ router.put('/:id', authController.update);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *     responses:
  *       200:
- *         description: User deleted
+ *         description: Account deleted
  *       404:
- *         description: User not found
+ *         description: Account not found
  */
 router.delete('/:id', authController.deleteUser);
 

@@ -6,8 +6,8 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./utils/swagger');
 const accountRoutes = require('./routes/accountRoutes');
+const swaggerSpec = require('./swagger');
 require('dotenv').config();
 
 const app = express();
@@ -16,7 +16,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:4200',
   'https://klykly-auth-frontend.onrender.com',
-  process.env.CLIENT_URL
+  process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(cors({
@@ -36,9 +36,8 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Swagger documentation
+// API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-console.log('✅ Swagger docs available at /api-docs');
 
 // Routes
 app.use('/accounts', accountRoutes);
@@ -51,7 +50,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
