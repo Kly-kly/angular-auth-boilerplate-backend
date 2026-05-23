@@ -12,7 +12,7 @@ require('dotenv').config();
 
 const app = express();
 
-// CORS configuration - allow multiple origins
+// CORS configuration
 const allowedOrigins = [
   'http://localhost:4200',
   'https://klykly-auth-frontend.onrender.com',
@@ -21,7 +21,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, postman)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
       console.warn(`Origin ${origin} not allowed by CORS`);
@@ -48,13 +47,7 @@ app.use('/accounts', accountRoutes);
 app.get('/', (req, res) => {
   res.json({
     message: 'Angular Auth API',
-    documentation: '/api-docs',
-    endpoints: {
-      health: '/accounts/health',
-      register: '/accounts/register',
-      login: '/accounts/authenticate',
-      docs: '/api-docs'
-    }
+    documentation: '/api-docs'
   });
 });
 

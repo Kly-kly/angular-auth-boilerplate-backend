@@ -12,10 +12,6 @@ const options = {
       {
         url: process.env.API_URL || 'https://klykly-auth-backend.onrender.com',
         description: 'Production Server'
-      },
-      {
-        url: 'http://localhost:4000',
-        description: 'Development Server'
       }
     ],
     components: {
