@@ -5,8 +5,9 @@ console.log('PORT:', process.env.PORT);
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./utils/swagger');
 const accountRoutes = require('./routes/accountRoutes');
-const setupSwagger = require('./config/swagger');
 require('dotenv').config();
 
 const app = express();
@@ -36,13 +37,14 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+console.log('✅ Swagger docs available at /api-docs');
+
 // Routes
 app.use('/accounts', accountRoutes);
 
-// Swagger documentation
-setupSwagger(app);
-
-// Root route with API info
+// Root route
 app.get('/', (req, res) => {
   res.json({
     message: 'Angular Auth API',

@@ -3,7 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 
 /**
- * @swagger
+ * @openapi
  * /accounts/health:
  *   get:
  *     summary: Health check endpoint
@@ -11,21 +11,13 @@ const authController = require('../controllers/authController');
  *     responses:
  *       200:
  *         description: API is working
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: API is working!
  */
 router.get('/health', (req, res) => {
   res.json({ message: 'API is working!' });
 });
 
 /**
- * @swagger
+ * @openapi
  * /accounts/register:
  *   post:
  *     summary: Register a new user
@@ -46,45 +38,26 @@ router.get('/health', (req, res) => {
  *             properties:
  *               title:
  *                 type: string
- *                 enum: [Mr, Mrs, Miss, Ms]
- *                 example: Mr
  *               firstName:
  *                 type: string
- *                 example: John
  *               lastName:
  *                 type: string
- *                 example: Doe
  *               email:
  *                 type: string
- *                 format: email
- *                 example: user@example.com
  *               password:
  *                 type: string
- *                 minLength: 6
- *                 example: password123
  *               acceptTerms:
  *                 type: boolean
- *                 example: true
  *     responses:
  *       201:
  *         description: Registration successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Registration successful! Please check your email for verification.
  *       400:
  *         description: Email already registered or terms not accepted
- *       500:
- *         description: Server error
  */
 router.post('/register', authController.register);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/verify-email:
  *   post:
  *     summary: Verify user email with token
@@ -100,7 +73,6 @@ router.post('/register', authController.register);
  *             properties:
  *               token:
  *                 type: string
- *                 example: abc123def456...
  *     responses:
  *       200:
  *         description: Email verified successfully
@@ -110,7 +82,7 @@ router.post('/register', authController.register);
 router.post('/verify-email', authController.verifyEmail);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/authenticate:
  *   post:
  *     summary: Login user
@@ -127,40 +99,18 @@ router.post('/verify-email', authController.verifyEmail);
  *             properties:
  *               email:
  *                 type: string
- *                 format: email
- *                 example: user@example.com
  *               password:
  *                 type: string
- *                 example: password123
  *     responses:
  *       200:
  *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                 title:
- *                   type: string
- *                 firstName:
- *                   type: string
- *                 lastName:
- *                   type: string
- *                 email:
- *                   type: string
- *                 role:
- *                   type: string
- *                 jwtToken:
- *                   type: string
  *       401:
  *         description: Invalid credentials or email not verified
  */
 router.post('/authenticate', authController.login);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/refresh-token:
  *   post:
  *     summary: Refresh JWT token
@@ -174,7 +124,7 @@ router.post('/authenticate', authController.login);
 router.post('/refresh-token', authController.refreshToken);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/revoke-token:
  *   post:
  *     summary: Revoke refresh token (logout)
@@ -186,7 +136,7 @@ router.post('/refresh-token', authController.refreshToken);
 router.post('/revoke-token', authController.revokeToken);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/forgot-password:
  *   post:
  *     summary: Request password reset email
@@ -202,8 +152,6 @@ router.post('/revoke-token', authController.revokeToken);
  *             properties:
  *               email:
  *                 type: string
- *                 format: email
- *                 example: user@example.com
  *     responses:
  *       200:
  *         description: Reset email sent if account exists
@@ -211,7 +159,7 @@ router.post('/revoke-token', authController.revokeToken);
 router.post('/forgot-password', authController.forgotPassword);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/validate-reset-token:
  *   post:
  *     summary: Validate password reset token
@@ -227,7 +175,6 @@ router.post('/forgot-password', authController.forgotPassword);
  *             properties:
  *               token:
  *                 type: string
- *                 example: abc123def456...
  *     responses:
  *       200:
  *         description: Token is valid
@@ -237,7 +184,7 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/validate-reset-token', authController.validateResetToken);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/reset-password:
  *   post:
  *     summary: Reset password with token
@@ -257,11 +204,8 @@ router.post('/validate-reset-token', authController.validateResetToken);
  *                 type: string
  *               password:
  *                 type: string
- *                 minLength: 6
- *                 example: newpassword123
  *               confirmPassword:
  *                 type: string
- *                 example: newpassword123
  *     responses:
  *       200:
  *         description: Password reset successfully
@@ -271,7 +215,7 @@ router.post('/validate-reset-token', authController.validateResetToken);
 router.post('/reset-password', authController.resetPassword);
 
 /**
- * @swagger
+ * @openapi
  * /accounts:
  *   get:
  *     summary: Get all users (Admin only)
@@ -281,36 +225,13 @@ router.post('/reset-password', authController.resetPassword);
  *     responses:
  *       200:
  *         description: List of all users
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   title:
- *                     type: string
- *                   firstName:
- *                     type: string
- *                   lastName:
- *                     type: string
- *                   email:
- *                     type: string
- *                   role:
- *                     type: string
- *                   isVerified:
- *                     type: boolean
- *                   createdAt:
- *                     type: string
  *       401:
  *         description: Unauthorized
  */
 router.get('/', authController.getAll);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/{id}:
  *   get:
  *     summary: Get user by ID
@@ -323,39 +244,19 @@ router.get('/', authController.getAll);
  *         required: true
  *         schema:
  *           type: integer
- *         description: User ID
  *     responses:
  *       200:
  *         description: User details
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                 title:
- *                   type: string
- *                 firstName:
- *                   type: string
- *                 lastName:
- *                   type: string
- *                 email:
- *                   type: string
- *                 role:
- *                   type: string
- *                 isVerified:
- *                   type: boolean
  *       404:
  *         description: User not found
  */
 router.get('/:id', authController.getById);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/{id}:
  *   put:
- *     summary: Update user (Admin or own profile)
+ *     summary: Update user
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -381,7 +282,6 @@ router.get('/:id', authController.getById);
  *                 type: string
  *               password:
  *                 type: string
- *                 minLength: 6
  *     responses:
  *       200:
  *         description: User updated
@@ -391,10 +291,10 @@ router.get('/:id', authController.getById);
 router.put('/:id', authController.update);
 
 /**
- * @swagger
+ * @openapi
  * /accounts/{id}:
  *   delete:
- *     summary: Delete user (Admin or own account)
+ *     summary: Delete user
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
