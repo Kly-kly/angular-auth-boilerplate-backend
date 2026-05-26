@@ -35,7 +35,7 @@ const register = async (req, res) => {
 
     res.status(201).json({ message: 'Registration successful! Please check your email for verification.' });
   } catch (error) {
-    console.error(error);
+    console.error('Register error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -51,6 +51,7 @@ const verifyEmail = async (req, res) => {
     
     res.json({ message: 'Email verified successfully' });
   } catch (error) {
+    console.error('Verify email error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -71,7 +72,14 @@ const login = async (req, res) => {
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken();
 
-    let refreshTokens = user.refreshTokens ? JSON.parse(user.refreshTokens) : [];
+    let refreshTokens = [];
+    if (user.refreshTokens && user.refreshTokens !== '' && user.refreshTokens !== '[]') {
+      try {
+        refreshTokens = JSON.parse(user.refreshTokens);
+      } catch (e) {
+        refreshTokens = [];
+      }
+    }
     refreshTokens.push(refreshToken);
     await User.updateRefreshTokens(user.id, refreshTokens);
 
@@ -92,7 +100,7 @@ const login = async (req, res) => {
       jwtToken: accessToken
     });
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -107,7 +115,14 @@ const refreshToken = async (req, res) => {
     const users = await User.getAll();
     let foundUser = null;
     for (const user of users) {
-      const tokens = user.refreshTokens ? JSON.parse(user.refreshTokens) : [];
+      let tokens = [];
+      if (user.refreshTokens && user.refreshTokens !== '' && user.refreshTokens !== '[]') {
+        try {
+          tokens = JSON.parse(user.refreshTokens);
+        } catch (e) {
+          tokens = [];
+        }
+      }
       if (tokens.includes(refreshToken)) {
         foundUser = user;
         break;
@@ -121,7 +136,14 @@ const refreshToken = async (req, res) => {
     const newAccessToken = generateAccessToken(foundUser.id);
     const newRefreshToken = generateRefreshToken();
 
-    let refreshTokens = foundUser.refreshTokens ? JSON.parse(foundUser.refreshTokens) : [];
+    let refreshTokens = [];
+    if (foundUser.refreshTokens && foundUser.refreshTokens !== '' && foundUser.refreshTokens !== '[]') {
+      try {
+        refreshTokens = JSON.parse(foundUser.refreshTokens);
+      } catch (e) {
+        refreshTokens = [];
+      }
+    }
     refreshTokens = refreshTokens.filter(t => t !== refreshToken);
     refreshTokens.push(newRefreshToken);
     await User.updateRefreshTokens(foundUser.id, refreshTokens);
@@ -143,6 +165,7 @@ const refreshToken = async (req, res) => {
       jwtToken: newAccessToken
     });
   } catch (error) {
+    console.error('Refresh token error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -156,7 +179,14 @@ const revokeToken = async (req, res) => {
 
     const users = await User.getAll();
     for (const user of users) {
-      const tokens = user.refreshTokens ? JSON.parse(user.refreshTokens) : [];
+      let tokens = [];
+      if (user.refreshTokens && user.refreshTokens !== '' && user.refreshTokens !== '[]') {
+        try {
+          tokens = JSON.parse(user.refreshTokens);
+        } catch (e) {
+          tokens = [];
+        }
+      }
       if (tokens.includes(refreshToken)) {
         const newTokens = tokens.filter(t => t !== refreshToken);
         await User.updateRefreshTokens(user.id, newTokens);
@@ -167,6 +197,7 @@ const revokeToken = async (req, res) => {
     res.clearCookie('refreshToken');
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
+    console.error('Revoke token error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -180,16 +211,22 @@ const forgotPassword = async (req, res) => {
 
     if (user) {
       const resetToken = crypto.randomBytes(32).toString('hex');
+      console.log('Generated token:', resetToken);
+      
       await db.execute(
         'UPDATE users SET resetToken = ?, resetTokenExpires = DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE email = ?',
         [resetToken, email]
       );
+      
       await sendResetPasswordEmail(email, user.firstName, resetToken);
+      console.log('✅ Reset email sent to:', email);
+    } else {
+      console.log('❌ User not found:', email);
     }
 
     res.json({ message: 'If an account exists with that email, you will receive password reset instructions.' });
   } catch (error) {
-    console.error(error);
+    console.error('Forgot password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -197,6 +234,8 @@ const forgotPassword = async (req, res) => {
 const validateResetToken = async (req, res) => {
   try {
     const { token } = req.body;
+    console.log('🔍 Validating token:', token);
+    
     const [rows] = await db.execute(
       'SELECT * FROM users WHERE resetToken = ? AND resetTokenExpires > NOW()',
       [token]
@@ -208,6 +247,7 @@ const validateResetToken = async (req, res) => {
 
     res.json({ message: 'Token is valid' });
   } catch (error) {
+    console.error('Validate token error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -215,6 +255,8 @@ const validateResetToken = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
+    console.log('🔑 Resetting password for token:', token);
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const [result] = await db.execute(
@@ -228,6 +270,7 @@ const resetPassword = async (req, res) => {
 
     res.json({ message: 'Password reset successful' });
   } catch (error) {
+    console.error('Reset password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -237,6 +280,7 @@ const getAll = async (req, res) => {
     const users = await User.getAll();
     res.json(users);
   } catch (error) {
+    console.error('Get all users error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -249,6 +293,7 @@ const getById = async (req, res) => {
     }
     res.json(user);
   } catch (error) {
+    console.error('Get user by id error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -266,6 +311,7 @@ const update = async (req, res) => {
     const updatedUser = await User.findById(req.params.id);
     res.json(updatedUser);
   } catch (error) {
+    console.error('Update user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -275,6 +321,7 @@ const deleteUser = async (req, res) => {
     await User.deleteUser(req.params.id);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
+    console.error('Delete user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
