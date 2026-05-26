@@ -6,7 +6,7 @@ const pool = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: false,  // ← Disable SSL completely
+  ssl: false,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -14,4 +14,12 @@ const pool = mysql.createPool({
 
 const promisePool = pool.promise();
 
-module.exports = { pool, promisePool };
+// Export an object with the execute method that User.js expects
+const db = {
+  execute: async (sql, params) => {
+    const [rows] = await promisePool.execute(sql, params);
+    return [rows];
+  }
+};
+
+module.exports = db;
