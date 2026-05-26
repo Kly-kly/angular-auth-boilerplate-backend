@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const db = require('../config/database');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
-const { sendVerificationEmail, sendResetPasswordEmail } = require('../utils/brevo');
+const { sendVerificationEmail, sendResetEmail } = require('../utils/brevo');
 
 const register = async (req, res) => {
   try {
@@ -211,14 +211,13 @@ const forgotPassword = async (req, res) => {
 
     if (user) {
       const resetToken = crypto.randomBytes(32).toString('hex');
-      console.log('Generated token:', resetToken);
       
       await db.execute(
         'UPDATE users SET resetToken = ?, resetTokenExpires = DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE email = ?',
         [resetToken, email]
       );
       
-      await sendResetPasswordEmail(email, user.firstName, resetToken);
+      await sendResetEmail(email, user.firstName, resetToken);
       console.log('✅ Reset email sent to:', email);
     } else {
       console.log('❌ User not found:', email);
@@ -234,8 +233,6 @@ const forgotPassword = async (req, res) => {
 const validateResetToken = async (req, res) => {
   try {
     const { token } = req.body;
-    console.log('🔍 Validating token:', token);
-    
     const [rows] = await db.execute(
       'SELECT * FROM users WHERE resetToken = ? AND resetTokenExpires > NOW()',
       [token]
@@ -255,8 +252,6 @@ const validateResetToken = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    console.log('🔑 Resetting password for token:', token);
-    
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const [result] = await db.execute(
@@ -280,7 +275,7 @@ const getAll = async (req, res) => {
     const users = await User.getAll();
     res.json(users);
   } catch (error) {
-    console.error('Get all users error:', error);
+    console.error('Get all error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -293,7 +288,7 @@ const getById = async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    console.error('Get user by id error:', error);
+    console.error('Get by id error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -311,7 +306,7 @@ const update = async (req, res) => {
     const updatedUser = await User.findById(req.params.id);
     res.json(updatedUser);
   } catch (error) {
-    console.error('Update user error:', error);
+    console.error('Update error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -321,7 +316,7 @@ const deleteUser = async (req, res) => {
     await User.deleteUser(req.params.id);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Delete user error:', error);
+    console.error('Delete error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
